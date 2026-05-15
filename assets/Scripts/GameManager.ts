@@ -1,6 +1,7 @@
-import { _decorator, CCInteger, Component, instantiate, Label, log, Node, Prefab, Vec3 } from 'cc';
+import { _decorator, CCInteger, CCFloat, Component, instantiate, Label, Node, Prefab, Vec3 } from 'cc';
 import { BLOCK_SIZE, PlayerController } from './PlayerController';
-import { Watch } from './Watch'
+import { Watch } from './Watch';
+import { CloudController } from './CloudController';
 
 const { ccclass, property } = _decorator;
 
@@ -19,15 +20,26 @@ enum GameState {
 export class GameManager extends Component {
 
     @property({ type: Prefab })
-    public boxPrefab: Prefab | null = null;
+    public blockPrefab: Prefab | null = null;
+
+    @property({ type: Prefab })
+    public cloudPrefab: Prefab | null = null;
+
     @property({ type: CCInteger })
     public roadLength: number = 100;
+
+    @property({ type: CCFloat, range: [0, 1] })
+    public cloudSpawnRate: number = 0.3;
+
     private _road: BlockType[] = [];
+    private _activeClouds: Map<number, Node> = new Map();
 
     @property({ type: Node })
     public startMenu: Node | null = null;
+
     @property({ type: PlayerController })
     public playerCtrl: PlayerController | null = null;
+
     @property({ type: Label })
     public stepsLabel: Label | null = null;
 
@@ -45,8 +57,13 @@ export class GameManager extends Component {
         if (this.startMenu) {
             this.startMenu.active = true;
             this.useTime = this.startMenu.getChildByName('timelabel');
-            this.watch.getComponent(Watch).pauseBtn(); //暂停计时
         }
+        this.watch.getComponent(Watch).pauseBtn();
+        this.node.getChildByName('blocks').removeAllChildren();
+
+        this._activeClouds.forEach(cloud => cloud.destroy());
+        this._activeClouds.clear();
+        this.node.getChildByName('clouds')?.removeAllChildren();
 
         this.generateRoad();
 
@@ -58,9 +75,12 @@ export class GameManager extends Component {
     }
 
     setUseTime(label: string) {
-        console.log(label)
-        this.useTime.getComponent(Label).string = label +
-            this.watch.getChildByName('label').getComponent(Label).string;
+        if (this.useTime && this.watch) {
+            const watchLabel = this.watch.getChildByName('label')?.getComponent(Label);
+            if (watchLabel) {
+                this.useTime.getComponent(Label).string = label + watchLabel.string;
+            }
+        }
     }
 
     setCurState(value: GameState) {
@@ -68,33 +88,30 @@ export class GameManager extends Component {
             case GameState.GS_INIT:
                 this.init();
                 break;
+
             case GameState.GS_PLAYING:
-                if (this.startMenu) {
-                    this.startMenu.active = false;
-                }
+                if (this.startMenu) this.startMenu.active = false;
+                if (this.stepsLabel) this.stepsLabel.string = '0';
+                this.watch.getComponent(Watch).resetBtn();
 
-                if (this.stepsLabel) {
-                    this.stepsLabel.string = '0';   // 将步数重置为0
-                    this.watch.getComponent(Watch).resetBtn(); //重置计时器
-                }
-
-                setTimeout(() => {      //直接设置active会直接开始监听屏幕事件，做了一下延迟处理
-                    if (this.playerCtrl) {
-                        this.playerCtrl.setInputActive(true);
-                    }
+                setTimeout(() => {
+                    if (this.playerCtrl) this.playerCtrl.setInputActive(true);
                 }, 0.1);
                 break;
+
             case GameState.GS_END:
+                this.watch.getComponent(Watch).pauseBtn();
+                if (this.playerCtrl) this.playerCtrl.setInputActive(false);
+                this.startMenu.active = true;
+                this.setUseTime('挑战失败！用时：');
+
                 break;
         }
     }
 
     generateRoad() {
-
-        this.node.removeAllChildren();
-
+        this.node.getChildByName('blocks').removeAllChildren();
         this._road = [];
-        // startPos
         this._road.push(BlockType.BT_STONE);
 
         for (let i = 1; i < this.roadLength; i++) {
@@ -106,57 +123,92 @@ export class GameManager extends Component {
         }
 
         for (let j = 0; j < this._road.length; j++) {
-            let block: Node | null = this.spawnBlockByType(this._road[j]);
-            if (block) {
-                this.node.addChild(block);
+            const type = this._road[j];
+            if (type === BlockType.BT_STONE) {
+                const block = instantiate(this.blockPrefab);
+                this.node.getChildByName('blocks').addChild(block);
                 block.setPosition(j * BLOCK_SIZE, -58, 0);
+
+                if (Math.random() < this.cloudSpawnRate && j > 0) {
+                    this.spawnCloud(j);
+                }
             }
         }
     }
 
-    spawnBlockByType(type: BlockType) {
-        if (!this.boxPrefab) {
-            return null;
+    spawnCloud(index: number) {
+        if (!this.cloudPrefab) return;
+        const cloudNode = instantiate(this.cloudPrefab);
+        this.node.getChildByName('clouds').addChild(cloudNode);
+        cloudNode.setPosition(index * BLOCK_SIZE, 180, 0);
+
+        const ctrl = cloudNode.getComponent(CloudController);
+        if (ctrl) {
+            ctrl.blockIndex = index;
+            cloudNode.on('CloudFallDead', this.onCloudFallDead, this);
         }
 
-        let block: Node | null = null;
-        switch (type) {
-            case BlockType.BT_STONE:
-                block = instantiate(this.boxPrefab);
-                break;
+        this._activeClouds.set(index, cloudNode);
+    }
+
+    onCloudFallDead(index: number) {
+        if (this.playerCtrl && this.playerCtrl.getCurMoveIndex() === index) {
+            this.setCurState(GameState.GS_END);
+            setTimeout(() => {
+                this.setCurState(GameState.GS_INIT);
+            }, 100);
+        }
+        const cloud = this._activeClouds.get(index);
+        if (cloud) {
+            cloud.off('CloudFallDead', this.onCloudFallDead, this);
+            cloud.destroy();
+            this._activeClouds.delete(index);
+        }
+    }
+
+    onPlayerJumpEnd(moveIndex: number) {
+        if (this.stepsLabel) {
+            this.stepsLabel.string = moveIndex.toString();
         }
 
-        return block;
+        const cloud = this._activeClouds.get(moveIndex);
+        if (cloud) {
+            const ctrl = cloud.getComponent(CloudController);
+            ctrl?.startFall();
+        }
+
+        this._activeClouds.forEach((cloud, idx) => {
+            if (idx < moveIndex) {
+                cloud.destroy();
+                this._activeClouds.delete(idx);
+            }
+        });
+
+        this.checkResult(moveIndex);
+
+        if (moveIndex >= this.roadLength) {
+            this.setUseTime('恭喜通关！用时：');
+            this.setCurState(GameState.GS_INIT);
+        }
+    }
+
+    checkResult(moveIndex: number) {
+        if (moveIndex < this.roadLength) {
+            if (this._road[moveIndex] == BlockType.BT_NONE) {
+                this.setCurState(GameState.GS_END);
+                setTimeout(() => {
+                    this.setCurState(GameState.GS_INIT);
+                }, 100);
+            }
+        } else {
+            this.setCurState(GameState.GS_INIT);
+        }
     }
 
     onStartButtonClicked() {
         this.setCurState(GameState.GS_PLAYING);
     }
 
-    checkResult(moveIndex: number) {
-        if (moveIndex < this.roadLength) {
-            if (this._road[moveIndex] == BlockType.BT_NONE) {   //跳到了空方块上
-                this.setCurState(GameState.GS_INIT);
-                //this.useTime.active = true;
-                this.setUseTime('用时：');
-            }
-        } else {    // 跳过了最大长度            
-            this.setCurState(GameState.GS_INIT);
-        }
-    }
-
-    onPlayerJumpEnd(moveIndex: number) {
-        if (this.stepsLabel) {
-            this.stepsLabel.string = '' + (moveIndex >= this.roadLength ? this.roadLength : moveIndex);
-        }
-        this.checkResult(moveIndex);
-
-        if (moveIndex >= 100) {
-            this.setUseTime('恭喜通关！用时：');
-            this.setCurState(GameState.GS_INIT);
-        }
-
-    }
     protected update(dt: number): void {
         if (!this.startMenu.active) {
             this.watch.getComponent(Watch).startBtn();

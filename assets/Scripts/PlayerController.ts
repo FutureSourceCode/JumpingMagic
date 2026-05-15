@@ -39,6 +39,11 @@ export class PlayerController extends Component {
         this._targetPos.set(0, 0, 0);
     }
 
+
+    getCurMoveIndex(): number {
+        return this._curMoveIndex;
+    }
+
     oneStep() {
         this.jumpByStep(1);
     }
