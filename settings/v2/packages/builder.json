@@ -28,10 +28,8 @@
             "configMode": "overwrite",
             "overwriteSettings": {
               "wechatgame": {
+                "isRemote": true,
                 "compressionType": "subpackage"
-              },
-              "vivo-mini-game": {
-                "isRemote": true
               }
             }
           }

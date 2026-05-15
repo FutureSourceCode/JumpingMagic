@@ -1,4 +1,4 @@
-import { _decorator, CCInteger, Component, instantiate, Label, Node, Prefab, Vec3 } from 'cc';
+import { _decorator, CCInteger, Component, instantiate, Label, log, Node, Prefab, Vec3 } from 'cc';
 import { BLOCK_SIZE, PlayerController } from './PlayerController';
 import { Watch } from './Watch'
 
@@ -44,7 +44,7 @@ export class GameManager extends Component {
     init() {
         if (this.startMenu) {
             this.startMenu.active = true;
-            this.useTime = this.startMenu.getChildByName('time');
+            this.useTime = this.startMenu.getChildByName('timelabel');
             this.watch.getComponent(Watch).pauseBtn(); //暂停计时
         }
 
@@ -58,9 +58,9 @@ export class GameManager extends Component {
     }
 
     setUseTime(label: string) {
-        this.useTime.getComponent(Label).string = label;
-        this.useTime.getChildByName('label').getComponent(Label).string
-            = this.watch.getChildByName('label').getComponent(Label).string;
+        console.log(label)
+        this.useTime.getComponent(Label).string = label +
+            this.watch.getChildByName('label').getComponent(Label).string;
     }
 
     setCurState(value: GameState) {
@@ -137,7 +137,7 @@ export class GameManager extends Component {
         if (moveIndex < this.roadLength) {
             if (this._road[moveIndex] == BlockType.BT_NONE) {   //跳到了空方块上
                 this.setCurState(GameState.GS_INIT);
-                this.useTime.active = true;
+                //this.useTime.active = true;
                 this.setUseTime('用时：');
             }
         } else {    // 跳过了最大长度            
