@@ -78,6 +78,12 @@ export class PlayerController extends Component {
         this._curMoveIndex += step;
     }
 
+    // 强制移动到指定格子（复活用）
+    forceMoveToIndex(index: number) {
+        this._curMoveIndex = index;
+        const targetX = index * BLOCK_SIZE;
+        this.node.setPosition(targetX, this.node.position.y, this.node.position.z);
+    }
 
     onOnceJumpEnd() {
         this.node.emit('JumpEnd', this._curMoveIndex);
