@@ -1,4 +1,4 @@
-import { _decorator, Component, Vec3, Animation, AudioSource } from 'cc';
+import { _decorator, Component, Vec3, Animation, AudioSource, director, Director } from 'cc';
 const { ccclass, property } = _decorator;
 
 export const BLOCK_SIZE = 80;
@@ -21,6 +21,7 @@ export class PlayerController extends Component {
     start() {
         //input.on(Input.EventType.MOUSE_UP, this.onMouseUp, this);
     }
+
     setInputActive(active: boolean) {
         const audio = this.node.parent.children[1].getComponent(AudioSource);
         if (active) {
@@ -28,17 +29,17 @@ export class PlayerController extends Component {
             this.node.parent.children[2].active = true;
             this.node.parent.children[3].active = true;
         } else {
+            audio.stop();
             this.node.parent.children[2].active = false;
             this.node.parent.children[3].active = false;
-            audio.stop();
         }
     }
+
     reset() {
         this._curMoveIndex = 0;
         this.node.getPosition(this._curPos);
         this._targetPos.set(0, 0, 0);
     }
-
 
     getCurMoveIndex(): number {
         return this._curMoveIndex;
@@ -47,6 +48,7 @@ export class PlayerController extends Component {
     oneStep() {
         this.jumpByStep(1);
     }
+
     twoStep() {
         this.jumpByStep(2);
     }
@@ -74,6 +76,10 @@ export class PlayerController extends Component {
                 this.BodyAnim.play('twoStep');
             }
         }
+
+        // 计算目标格子索引并发送跳跃开始事件（核心！）
+        const targetIndex = this._curMoveIndex + step;
+        this.node.emit('JumpStart', targetIndex);
 
         this._curMoveIndex += step;
     }
@@ -106,7 +112,4 @@ export class PlayerController extends Component {
             }
         }
     }
-
 }
-
-
