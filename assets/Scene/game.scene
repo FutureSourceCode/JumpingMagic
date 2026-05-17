@@ -274,7 +274,7 @@
       "a": 255
     },
     "_spriteFrame": {
-      "__uuid__": "379c052f-ad20-4506-aa74-35c9373700a8@f9941",
+      "__uuid__": "0d8266cc-33ab-4eb5-955f-24509a2352b1@f9941",
       "__expectedType__": "cc.SpriteFrame"
     },
     "_type": 0,
@@ -1185,7 +1185,7 @@
     "watch": {
       "__id__": 59
     },
-    "recordMgr": {
+    "recordManager": {
       "__id__": 77
     },
     "_id": "d85muqfKhPubf1DxXec3np"
@@ -1374,7 +1374,7 @@
     "_priority": 0,
     "_fov": 45,
     "_fovAxis": 0,
-    "_orthoHeight": 539.888,
+    "_orthoHeight": 593.9033124440465,
     "_near": 0,
     "_far": 1000,
     "_color": {

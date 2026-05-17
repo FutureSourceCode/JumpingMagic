@@ -43,7 +43,7 @@ export class GameManager extends Component {
     public watch: Node | null = null;
 
     @property({ type: RecordManager })
-    public recordMgr: RecordManager = null!;
+    public recordManager: RecordManager = null!;
 
     public restartButton: Node = null!;
     public continueButton: Node = null!;
@@ -218,16 +218,21 @@ export class GameManager extends Component {
 
     public triggerGameOver() {
         if (!this.playerCtrl) return;
+
         this._endIndex = this.playerCtrl.getCurMoveIndex();
 
-        // 获取当前用时
+        // 获取当前时间
         let curTime = "00:00.00";
-        const timeLabel = this.watch?.getChildByName("label")?.getComponent(Label);
-        if (timeLabel) curTime = timeLabel.string;
+        if (this.watch) {
+            const timeLabel = this.watch.getChildByName("label")?.getComponent(Label);
+            if (timeLabel) {
+                curTime = timeLabel.string;
+            }
+        }
 
-        // 调用保存记录
-        if (this.recordMgr) {
-            this.recordMgr.saveNewRecord(this._endIndex, curTime);
+        // ✅ 更新记录（微信可用）
+        if (this.recordManager) {
+            this.recordManager.updateRecord(this._endIndex, curTime);
         }
 
         this.setCurState(GameState.GS_END);
@@ -315,7 +320,7 @@ export class GameManager extends Component {
         this.checkCloudAndBlockOverlap(moveIndex);
 
         if (moveIndex >= this.roadLength - 1) {
-            this.setUseTime(true);
+            this.setUseTime(true);//游戏通关
             this.setCurState(GameState.GS_INIT);
             return;
         }
@@ -333,14 +338,14 @@ export class GameManager extends Component {
         if (hasBlock && hasLandedCloud) {
             this._endIndex = moveIndex;
             cloudNode?.getComponent(CloudController)?.playHitPlayerSound();
-            this.setCurState(GameState.GS_END);
+            this.triggerGameOver(); // 这里必须调用！
         }
     }
 
     checkResult(moveIndex: number) {
         if (moveIndex < this.roadLength && this._road[moveIndex] === BlockType.BT_NONE) {
             this._endIndex = moveIndex;
-            this.setCurState(GameState.GS_END);
+            this.triggerGameOver(); // 这里必须调用！
         }
     }
 

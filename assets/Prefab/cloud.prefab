@@ -151,7 +151,10 @@
       "__id__": 7
     },
     "fallSpeed": 150,
-    "hitPlayerClip": null,
+    "hitPlayerClip": {
+      "__uuid__": "ba9ae027-579d-49cd-85ba-65f2bd8f70a0",
+      "__expectedType__": "cc.AudioClip"
+    },
     "_id": ""
   },
   {
