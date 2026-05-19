@@ -12,6 +12,7 @@ export class BgSwitch extends Component {
     private isSwitching = false;
 
     onLoad() {
+
         this.sprite = this.getComponent(Sprite)!;
         this.opacity = this.getComponent(UIOpacity)!;
         this.opacity.opacity = 255;
@@ -57,6 +58,20 @@ export class BgSwitch extends Component {
                 this.isSwitching = false;
             })
             .start();
+    }
+
+    //普通切换
+    public switchToIndexImmediately(targetIndex: number) {
+        // 越界判断
+        if (targetIndex < 0 || targetIndex >= this.BgList.length) return;
+
+        // 直接切换，不等待动画
+        this.index = targetIndex;
+        this.sprite.spriteFrame = this.BgList[this.index];
+
+        // 保证透明度是完全显示
+        this.opacity.opacity = 255;
+        this.isSwitching = false; // 重置状态
     }
 
 

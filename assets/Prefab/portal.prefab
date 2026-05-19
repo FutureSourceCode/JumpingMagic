@@ -35,8 +35,8 @@
     },
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": -198.633,
-      "y": 11.993,
+      "x": 239.715,
+      "y": 30.962,
       "z": 0
     },
     "_lrot": {
@@ -77,7 +77,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 63.525999999999996,
-      "height": 86.042
+      "height": 140
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -169,7 +169,6 @@
       "__id__": 0
     },
     "fileId": "6bmvjEbKFJ/o+5MB6ioXdm",
-    "instance": null,
     "targetOverrides": null
   }
 ]

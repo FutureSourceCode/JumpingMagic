@@ -4,10 +4,6 @@ const { ccclass, property } = _decorator;
 
 @ccclass('CloudController')
 export class CloudController extends Component {
-    @property({ type: CCInteger })
-    public fallSpeed: number = 50;
-    public blockY: number = 0;
-
     @property({ type: AudioClip })
     public hitPlayerClip: AudioClip = null!;
     private _audioSource: AudioSource = null!;
@@ -16,6 +12,10 @@ export class CloudController extends Component {
     public blockIndex: number = 0;
     public gameManager!: GameManager;
     public _isLanded: boolean = false;
+
+    public fallSpeed: number = 0;//下落速度
+    public blockY: number = 0;//落到地上位置
+
 
     get isFalling(): boolean {
         return this._isFalling;
@@ -47,6 +47,14 @@ export class CloudController extends Component {
         this._isFalling = false;
     }
 
+    getFallSpeed() {
+        return this.fallSpeed;
+    }
+
+    setFallSpeed(speed: number) {
+        this.fallSpeed = speed;
+    }
+
     playHitPlayerSound() {
         if (this.hitPlayerClip && this._audioSource) {
             this._audioSource.playOneShot(this.hitPlayerClip);
@@ -54,7 +62,7 @@ export class CloudController extends Component {
     }
 
     update(deltaTime: number) {
-        // 仅X小于-12768销毁，不动这条规则
+        // 小于-12768销毁
         if (this.node.position.x < -12768) {
             this.node.destroy();
             this.gameManager._activeClouds.delete(this.blockIndex);
@@ -70,7 +78,7 @@ export class CloudController extends Component {
         if (newY < 172) {
             const playerIndex = this.gameManager.getCurPlayerIndex();
             if (playerIndex === this.blockIndex) {
-                // 新增：记录砸死玩家的云块索引
+                // 记录砸死玩家的云块索引
                 this.gameManager.setKillCloudIndex(this.blockIndex);
                 this.playHitPlayerSound();
                 this.gameManager.triggerGameOver();

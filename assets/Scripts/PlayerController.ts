@@ -80,7 +80,7 @@ export class PlayerController extends Component {
             }
         }
 
-        // 计算目标格子索引并发送跳跃开始事件（核心！）
+        // 计算目标格子索引并发送跳跃开始事件
         const targetIndex = this._curMoveIndex + step;
         this.node.emit('JumpStart', targetIndex);
 

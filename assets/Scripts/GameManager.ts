@@ -1,4 +1,4 @@
-import { _decorator, CCInteger, CCFloat, Component, instantiate, Label, Node, Prefab, Vec3, director, Color, AudioSource, AudioClip } from 'cc';
+import { _decorator, Component, instantiate, Label, Node, Prefab, Vec3, director, Color, AudioSource, AudioClip, Sprite } from 'cc';
 import { BLOCK_SIZE, PlayerController } from './PlayerController';
 import { Watch } from './Watch';
 import { CloudController } from './CloudController';
@@ -25,12 +25,6 @@ export class GameManager extends Component {
     public blockPrefab: Prefab | null = null;
     @property({ type: Prefab })
     public cloudPrefab: Prefab | null = null;
-
-    @property({ type: CCFloat, range: [0, 1] })
-    public cloudSpawnRate: number = 0.3;
-
-    private _road: BlockType[] = [];
-    public _activeClouds: Map<number, Node> = new Map();
 
     @property({ type: Node })
     public startMenu: Node | null = null;
@@ -60,8 +54,17 @@ export class GameManager extends Component {
     public useTime: Node = null!;
     private _endIndex: number = 0;
     public isPause: boolean = false;
-    private _isFirstGame: boolean = true; // 核心标记
     private _killCloudIndex: number = -1;
+
+    public cloudSpawnRate: number = 0.2;    // 初始概率
+    public cloudFallSpeed: number = 100;   // 初始速度
+    public readonly maxCloudRate = 0.4;    // 最高概率 0.4
+    public readonly maxCloudSpeed = 500;   // 最高速度 500
+
+    private bgMusic: AudioSource = null;
+
+    private _road: BlockType[] = [];
+    public _activeClouds: Map<number, Node> = new Map();
 
     private _isButtonLocked: boolean = false;
     // 每通关一关累加100的基数
@@ -72,6 +75,10 @@ export class GameManager extends Component {
 
 
     start() {
+
+        //音乐播放器
+        this.bgMusic = this.node.getComponent(AudioSource);
+
 
         if (!this.playerCtrl || !this.startMenu || !this.watch || !this.stepsLabel) {
             console.error("GameManager 关键组件未配置！");
@@ -92,10 +99,6 @@ export class GameManager extends Component {
         this.restartButton.off('click', this.onRestartButtonClicked, this);
         this.restartButton.on('click', this.onRestartButtonClicked, this);
         this.continueButton.off('click', this.onContinueButtonClicked, this);
-        this.continueButton.on('click', this.onContinueButtonClicked, this);
-
-        //this.generateRoad();
-        //this.setCurState(GameState.GS_INIT);
     }
 
     initGame() {
@@ -137,11 +140,6 @@ export class GameManager extends Component {
 
             case GameState.GS_PLAYING:
                 if (this.startMenu) this.startMenu.active = false;
-                //if (this.stepsLabel) this.stepsLabel.string = '0';
-
-                //this.watch?.getComponent(Watch)?.resetBtn();
-                //if (director.isPaused()) director.resume();
-
                 this.isPause = false;
                 setTimeout(() => {
                     this.watch?.getComponent(Watch)?.startBtn();
@@ -161,12 +159,10 @@ export class GameManager extends Component {
                             safeIndex = i;
                             break;
                         }
-
                         const ctrl = cloudNode.getComponent(CloudController);
                         if (ctrl.isFalling || ctrl._isLanded) {
                             continue;
                         }
-
                         safeIndex = i;
                         break;
                     }
@@ -231,7 +227,7 @@ export class GameManager extends Component {
     }
 
     //生成草块
-    public roadLength: number = 101;
+    public roadLength: number = 102;
     generateRoad() {
         if (!this.blockPrefab || !this.cloudPrefab || !this.portal) {
             console.error("预制体未配置！");
@@ -255,13 +251,21 @@ export class GameManager extends Component {
         this._road = [];
         this._road.push(BlockType.BT_STONE);
         for (let i = 1; i < this.roadLength; i++) {
-            // 最后一格强制生成草块，其他正常随机
-            if (i === 100) {
-                this._road.push(BlockType.BT_STONE); // 第100格固定是石头
-            } else {
+            if (i === 100 || i === 99) {
+                this._road.push(BlockType.BT_STONE);
+            }
+            else if (i == 101) {
+                this._road.push(BlockType.BT_NONE);
+            }
+            else {
                 this._road.push(this._road[i - 1] === BlockType.BT_NONE ? BlockType.BT_STONE : Math.floor(Math.random() * 2));
             }
         }
+
+        // 按背景索引取色
+        const bgIndex = this.bg ? this.bg.getCurrentIndex() : 0;
+        const colorHex = this.blockColorList[bgIndex % this.blockColorList.length];
+        const blockColor = this.hexToColor(colorHex);
 
         for (let j = 0; j < this._road.length; j++) {
             const type = this._road[j];
@@ -270,20 +274,30 @@ export class GameManager extends Component {
                 blockParent.addChild(block);
                 block.setPosition(j * BLOCK_SIZE, -58, 0);
 
-                // 最后一格不生成云
-                if (Math.random() < this.cloudSpawnRate && j > 0 && j !== 100) {
+                // 设置草块颜色
+                const sprite = block.getComponent(Sprite);
+                if (sprite) sprite.color = blockColor;
+
+                if (Math.random() < this.cloudSpawnRate && j > 0 && j !== 100 && j !== 99) {
                     this.spawnCloud(j);
                 }
             }
         }
 
-        // 固定在第100格生成传送门
+        // 传送门
         const portalNode = instantiate(this.portal);
         blockParent.addChild(portalNode);
-        portalNode.setPosition(100 * BLOCK_SIZE, 12, 0); // 草块正上方
+        portalNode.setPosition(100 * BLOCK_SIZE, 32, 0);
     }
 
-
+    // 16进制颜色转换
+    hexToColor(hex: string): Color {
+        hex = hex.replace('#', '');
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        return new Color(r, g, b, 255);
+    }
 
     spawnCloud(index: number) {
         if (!this.cloudPrefab) return;
@@ -300,6 +314,7 @@ export class GameManager extends Component {
             ctrl.blockIndex = index;
             ctrl.gameManager = this;
             ctrl.blockY = 0;
+            ctrl.fallSpeed = this.cloudFallSpeed;
         }
         this._activeClouds.set(index, cloudNode);
     }
@@ -307,9 +322,6 @@ export class GameManager extends Component {
     onPlayerJumpEnd(moveIndex: number) {
         if (moveIndex < 0 || moveIndex >= this.roadLength) return;
 
-        //if (this.stepsLabel) this.stepsLabel.string = moveIndex.toString();
-
-        // UI显示 = 基数 + 本关格子索引
         if (this.stepsLabel) {
             let total = this.baseStep + moveIndex;
             this.stepsLabel.string = total.toString();
@@ -332,11 +344,7 @@ export class GameManager extends Component {
 
         this.checkCloudAndBlockOverlap(moveIndex);
 
-        if (moveIndex >= this.roadLength - 1) {
-            //this.setUseTime(true);//游戏通关
-            //this.setCurState(GameState.GS_INIT);
-            //传送
-            //新场景地图
+        if (moveIndex >= this.roadLength - 2) {
             this.onBgSwitch();
             return;
         }
@@ -349,11 +357,11 @@ export class GameManager extends Component {
         const hasBlock = this._road[moveIndex] === BlockType.BT_STONE;
         const cloudNode = this._activeClouds.get(moveIndex);
         const hasLandedCloud = cloudNode && cloudNode.isValid && cloudNode.getComponent(CloudController)?._isLanded;
+
         if (hasBlock && hasLandedCloud) {
             this._endIndex = moveIndex;
             cloudNode?.getComponent(CloudController)?.playHitPlayerSound();
             this.triggerGameOver();
-            this.setCurState(GameState.GS_END);
         }
     }
 
@@ -361,19 +369,11 @@ export class GameManager extends Component {
         if (moveIndex < this.roadLength && this._road[moveIndex] === BlockType.BT_NONE) {
             this._endIndex = moveIndex;
             this.triggerGameOver();
-            this.setCurState(GameState.GS_END);
         }
     }
 
-    // 首次点击【开始新游戏】不刷新场景
     onStartGameBtn() {
-        if (this._isFirstGame) {
-            // 第一次：不刷新，直接开始
-            this._isFirstGame = false;
-        } else {
-            // 第二次及以后：刷新
-            this.generateRoad();
-        }
+        this.generateRoad();
         this.setCurState(GameState.GS_PLAYING);
     }
 
@@ -382,7 +382,13 @@ export class GameManager extends Component {
     }
 
     onRestartButtonClicked() {
+        this.bg?.switchToIndexImmediately(0);
         this.baseStep = 0;
+
+        // 重置难度 
+        this.cloudSpawnRate = 0.2;
+        this.cloudFallSpeed = 100;
+
         if (this._isButtonLocked) return;
         this._isButtonLocked = true;
 
@@ -396,16 +402,9 @@ export class GameManager extends Component {
         if (this.stepsLabel) this.stepsLabel.string = '0';
         this.watch?.getComponent(Watch)?.resetBtn();
 
-        // 重启按钮逻辑不变
-        if (!this._isFirstGame) {
-            this.generateRoad();
-        }
-        this._isFirstGame = false;
-
+        this.generateRoad();
         this.setCurState(GameState.GS_PLAYING);
-
     }
-
 
     onContinueButtonClicked() {
         if (this._isButtonLocked) return;
@@ -414,17 +413,14 @@ export class GameManager extends Component {
         if (this.isPause) {
             this.isPause = false;
             director.resume();
-
             const titleLabel = this.startMenu?.getChildByName('Title')?.getComponent(Label);
             if (titleLabel) titleLabel.string = '魔法跃行';
-
             this.startMenu!.active = false;
             this.watch?.getComponent(Watch)?.startBtn();
             this.playerCtrl?.setInputActive(true);
         } else {
             const titleLabel = this.startMenu?.getChildByName('Title')?.getComponent(Label);
             if (titleLabel) titleLabel.string = '魔法跃行';
-
             this.restartButton.active = true;
             this.continueButton.active = false;
             this.restartButton.setPosition(195.994, 7.815);
@@ -434,33 +430,21 @@ export class GameManager extends Component {
 
     //切换背景
     onBgSwitch() {
-        // 通关一次，基数直接+100
         this.baseStep += 100;
-        this.node.getComponent(AudioSource).playOneShot(this.portalMusic, 1);
-        this.bg.nextBackground();
-        if (this._isButtonLocked) return;
-        this._isButtonLocked = true;
+        this.node.getComponent(AudioSource)?.playOneShot(this.portalMusic, 1);
+        this.bg?.nextBackground();
 
-        this.continueButton.active = false;
-        const realTotalSteps = this.baseStep;
-        const timeLab = this.watch?.getChildByName("label")?.getComponent(Label);
-        const nowTime = timeLab ? timeLab.string : "00:00.00";
-        if (this.recordManager) {
-            this.recordManager.updateRecord(realTotalSteps, nowTime);
-        }
+        // 每次+0.1，最高0.4
+        this.cloudSpawnRate = Math.min(this.cloudSpawnRate + 0.1, this.maxCloudRate);
+        this.cloudFallSpeed = Math.min(this.cloudFallSpeed + 50, this.maxCloudSpeed);
 
         if (this.playerCtrl) {
             this.playerCtrl.node.setPosition(Vec3.ZERO);
             this.playerCtrl.reset();
         }
 
-        if (!this._isFirstGame) {
-            this.generateRoad();
-        }
-        this._isFirstGame = false;
-
+        this.generateRoad();
         this.setCurState(GameState.GS_PLAYING);
-        console.log('背景切换成功')
     }
 
     onDestroy() {

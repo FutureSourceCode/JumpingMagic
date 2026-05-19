@@ -150,7 +150,6 @@
     "__prefab": {
       "__id__": 7
     },
-    "fallSpeed": 150,
     "hitPlayerClip": {
       "__uuid__": "ba9ae027-579d-49cd-85ba-65f2bd8f70a0",
       "__expectedType__": "cc.AudioClip"
@@ -181,7 +180,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "48N3qKFC1IubnxUNDcy7Gd"
+    "fileId": "95xgPVwdNIcqL4fk0XW9AS"
   },
   {
     "__type__": "cc.PrefabInfo",
