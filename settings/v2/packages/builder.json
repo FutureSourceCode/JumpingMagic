@@ -39,8 +39,18 @@
   },
   "splash-setting": {
     "logo": {
-      "image": "project://settings/logo.png",
+      "image": "project://settings/logo2.png",
       "type": "custom"
-    }
+    },
+    "background": {
+      "color": {
+        "x": 1,
+        "y": 1,
+        "z": 1,
+        "w": 1
+      },
+      "type": "color"
+    },
+    "totalTime": 500
   }
 }

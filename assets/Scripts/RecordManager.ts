@@ -38,7 +38,7 @@ export class RecordManager extends Component {
     // 刷新界面显示
     refreshUI() {
         if (!this.recordLabel) return;
-        this.recordLabel.string = `最高记录：${this.nowRecord.maxSteps}步  最快用时：${this.nowRecord.useTime}`;
+        this.recordLabel.string = `最高记录：${this.nowRecord.maxSteps}步  用时：${this.nowRecord.useTime}`;
     }
 
     // 时间字符串转总毫秒数 方便比对

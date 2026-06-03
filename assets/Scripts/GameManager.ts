@@ -4,6 +4,7 @@ import { Watch } from './Watch';
 import { CloudController } from './CloudController';
 import { RecordManager } from './RecordManager';
 import { BgSwitch } from './BgSwitch';
+import { MagicPower } from './MagicPower';
 
 const { ccclass, property } = _decorator;
 
@@ -45,9 +46,16 @@ export class GameManager extends Component {
     @property({ type: Prefab })
     public portal: Prefab = null!;
 
+    //魔力控制
+    @property({ type: MagicPower })
+    private magicPower: MagicPower = null!;
 
     @property({ type: AudioClip })
     public portalMusic: AudioClip = null!;
+
+    //死亡音效果
+    @property({ type: AudioClip })
+    public dieMusic: AudioClip = null!;
 
     public restartButton: Node = null!;
     public continueButton: Node = null!;
@@ -56,12 +64,12 @@ export class GameManager extends Component {
     public isPause: boolean = false;
     private _killCloudIndex: number = -1;
 
-    public cloudSpawnRate: number = 0.2;    // 初始概率
+    public cloudSpawnRate: number = 0.1;    // 初始概率
     public cloudFallSpeed: number = 100;   // 初始速度
-    public readonly maxCloudRate = 0.4;    // 最高概率 0.4
-    public readonly maxCloudSpeed = 500;   // 最高速度 500
+    public readonly maxCloudRate = 0.3;    // 最高概率 0.4
+    public readonly maxCloudSpeed = 350;   // 最高速度 500
 
-    private bgMusic: AudioSource = null;
+    private audio: AudioSource = null;
 
     private _road: BlockType[] = [];
     public _activeClouds: Map<number, Node> = new Map();
@@ -76,8 +84,9 @@ export class GameManager extends Component {
 
     start() {
 
+        //this.magicPower.setMagic(10)
         //音乐播放器
-        this.bgMusic = this.node.getComponent(AudioSource);
+        this.audio = this.node.getComponent(AudioSource);
 
 
         if (!this.playerCtrl || !this.startMenu || !this.watch || !this.stepsLabel) {
@@ -95,10 +104,6 @@ export class GameManager extends Component {
         }
         this.restartButton = buttonRoot.getChildByName('restart')!;
         this.continueButton = buttonRoot.getChildByName('continue')!;
-
-        this.restartButton.off('click', this.onRestartButtonClicked, this);
-        this.restartButton.on('click', this.onRestartButtonClicked, this);
-        this.continueButton.off('click', this.onContinueButtonClicked, this);
     }
 
     initGame() {
@@ -212,6 +217,7 @@ export class GameManager extends Component {
     }
 
     public triggerGameOver() {
+        this.audio.playOneShot(this.dieMusic, 1);
         if (!this.playerCtrl) return;
         this._endIndex = this.playerCtrl.getCurMoveIndex();
         let nowTime = "00:00.00";
@@ -334,7 +340,7 @@ export class GameManager extends Component {
             }
 
             const dis = idx - moveIndex;
-            if (dis >= 0 && dis <= 2) {
+            if (dis >= -1 && dis <= 2) {
                 const ctrl = cloudNode.getComponent(CloudController);
                 if (ctrl && !ctrl.isFalling && !ctrl._isLanded) {
                     ctrl.startFall();
@@ -360,7 +366,7 @@ export class GameManager extends Component {
 
         if (hasBlock && hasLandedCloud) {
             this._endIndex = moveIndex;
-            cloudNode?.getComponent(CloudController)?.playHitPlayerSound();
+            this.audio.playOneShot(this.dieMusic, 1);
             this.triggerGameOver();
         }
     }
@@ -382,11 +388,29 @@ export class GameManager extends Component {
     }
 
     onRestartButtonClicked() {
+
+        // 检查是否有足够的魔力值
+        if (this.magicPower && !this.magicPower.canPlayGame()) {
+            // 如果魔力值不足，更新 useTime 文本并返回
+            if (this.useTime) {
+                const labelComp = this.useTime.getComponent(Label);
+                if (labelComp) {
+                    labelComp.string = '魔力值耗尽（明日恢复）';
+                }
+            }
+            return;
+        }
+
+        // 如果有魔力值，则消耗一点
+        if (this.magicPower) {
+            this.magicPower.costMagic();
+        }
+
         this.bg?.switchToIndexImmediately(0);
         this.baseStep = 0;
 
         // 重置难度 
-        this.cloudSpawnRate = 0.2;
+        this.cloudSpawnRate = 0.1;
         this.cloudFallSpeed = 100;
 
         if (this._isButtonLocked) return;

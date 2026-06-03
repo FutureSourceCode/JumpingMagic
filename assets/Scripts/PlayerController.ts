@@ -29,7 +29,7 @@ export class PlayerController extends Component {
             this.node.parent.children[2].active = true;
             this.node.parent.children[3].active = true;
         } else {
-            audio.stop();
+            audio.pause();
             this.node.parent.children[2].active = false;
             this.node.parent.children[3].active = false;
         }
