@@ -1,7 +1,7 @@
 [
   {
     "__type__": "cc.Prefab",
-    "_name": "Box",
+    "_name": "cloud",
     "_objFlags": 0,
     "__editorExtras__": {},
     "_native": "",
@@ -13,7 +13,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "Box",
+    "_name": "cloud",
     "_objFlags": 0,
     "__editorExtras__": {},
     "_parent": null,
@@ -25,15 +25,21 @@
       },
       {
         "__id__": 4
+      },
+      {
+        "__id__": 6
+      },
+      {
+        "__id__": 8
       }
     ],
     "_prefab": {
-      "__id__": 6
+      "__id__": 10
     },
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": -37,
-      "y": 0,
+      "x": 123.94100000000003,
+      "y": -1.8559999999999945,
       "z": 0
     },
     "_lrot": {
@@ -110,7 +116,7 @@
       "a": 255
     },
     "_spriteFrame": {
-      "__uuid__": "721d9da4-b223-455c-83fc-fad82f751caa@f9941",
+      "__uuid__": "6425c22e-51ff-4569-b6b9-380a21ce7171@f9941",
       "__expectedType__": "cc.SpriteFrame"
     },
     "_type": 0,
@@ -131,6 +137,58 @@
   {
     "__type__": "cc.CompPrefabInfo",
     "fileId": "c9cwOjNzJNtpv3adi+EpTc"
+  },
+  {
+    "__type__": "a616cicYJFB6LKTItwAYQLO",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 7
+    },
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "e3OCbLlyhCmrylLHoy1Uxn"
+  },
+  {
+    "__type__": "cc.BoxCollider2D",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 9
+    },
+    "tag": 0,
+    "_group": 1,
+    "_density": 1,
+    "_sensor": true,
+    "_friction": 0.2,
+    "_restitution": 0,
+    "_offset": {
+      "__type__": "cc.Vec2",
+      "x": -0.3,
+      "y": 0.5
+    },
+    "_size": {
+      "__type__": "cc.Size",
+      "width": 36.2,
+      "height": 34.1
+    },
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "c8wNiihQBF96164jFwrPMY"
   },
   {
     "__type__": "cc.PrefabInfo",

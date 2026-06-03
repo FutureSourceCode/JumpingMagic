@@ -52,8 +52,8 @@
         "_value": true
       },
       "physics-2d": {
-        "_value": false,
-        "_option": "physics-2d-box2d"
+        "_value": true,
+        "_option": "physics-2d-builtin"
       },
       "physics-2d-box2d": {
         "_value": true
@@ -132,6 +132,7 @@
       "base",
       "gfx-webgl",
       "gfx-webgl2",
+      "physics-2d-builtin",
       "tween",
       "ui",
       "webview"

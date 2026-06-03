@@ -32,17 +32,17 @@ export class Watch extends Component {
         this.timeLabel.string = "00:00.00";
     }
 
-    // 更新时间显示
+    // 更新时间显示（优化格式化逻辑）
     updateTime() {
         this.time += 0.01;
 
-        // 计算分、秒、毫秒
-        const minute = Math.floor(this.time / 60).toString().padStart(2, '0');
-        const second = Math.floor(this.time % 60).toString().padStart(2, '0');
-        const millisecond = Math.floor((this.time * 100) % 100).toString().padStart(2, '0');
+        // 计算分、秒、毫秒（优化取整逻辑）
+        const totalMs = Math.floor(this.time * 100);
+        const minute = Math.floor(totalMs / 6000).toString().padStart(2, '0');
+        const second = Math.floor((totalMs % 6000) / 100).toString().padStart(2, '0');
+        const millisecond = (totalMs % 100).toString().padStart(2, '0');
+
         // 更新文本显示
         this.timeLabel.string = `${minute}:${second}.${millisecond}`;
     }
-
 }
-
